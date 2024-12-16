@@ -11,11 +11,16 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+export interface Env {
+	API_KEY: string;
+}
+
 export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		const url = new URL(request.url);
 		const queryUrl = url.searchParams.get('url');
 		const strategy = url.searchParams.get('strategy') || 'mobile'; // Default to mobile if not specified
+		const category = 'accessibility';
 
 		if (!queryUrl) {
 			return new Response(
@@ -26,10 +31,10 @@ export default {
 			);
 		}
 
-		const apiKey = 'AIzaSyB5M1JILkVV4dzmVHzsvfBKYrfoJbkYgcQ'; // Replace with your API key
+		const apiKey = env.API_KEY; // Replace with your API key
 		const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(
 			queryUrl,
-		)}&strategy=${strategy}&category=performance&key=${apiKey}`;
+		)}&strategy=${strategy}&category=${category}&key=${apiKey}`;
 
 		try {
 			const response = await fetch(apiUrl);
@@ -43,7 +48,6 @@ export default {
 			}
 
 			const data: any = await response.json();
-			const performanceCategory = data.lighthouseResult.categories.performance;
 			const audits = data.lighthouseResult.audits;
 
 			const metrics = {
@@ -55,7 +59,7 @@ export default {
 			};
 
 			const recommendations = Object.values(audits)
-				.filter((audit: any) => audit.score !== 1 && audit.scoreDisplayMode === 'metricSavings')
+				.filter((audit: any) => audit.score !== 1 && (audit.scoreDisplayMode === 'metricSavings' || audit.scoreDisplayMode === 'binary'))
 				.map((audit: any) => ({
 					title: audit.title,
 					description: audit.description,
@@ -66,7 +70,7 @@ export default {
 			const result = {
 				requestedUrl: data.lighthouseResult.requestedUrl,
 				finalUrl: data.lighthouseResult.finalUrl,
-				overallScore: performanceCategory.score * 100, // Score is between 0 and 1
+				overallScore: data.lighthouseResult.categories[category].score * 100, // Score is between 0 and 1
 				metrics,
 				recommendations,
 			};
