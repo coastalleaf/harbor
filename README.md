@@ -2,7 +2,7 @@
 
 ## Overview
 
-Harbor is a **Cloudflare Worker** that integrates with the Google PageSpeed Insights API to analyze the performance, accessibility, best practices, and SEO of a given URL. It supports both mobile and desktop strategies and provides detailed JSON responses with metrics, scores, and recommendations. This tool is designed for developers who want to monitor and improve website performance or adapt the worker for their own needs.
+Harbor is a lightweight and customizable Cloudflare Worker that leverages the Google PageSpeed Insights API to analyze the performance, accessibility, best practices, and SEO of a given URL. It provides actionable insights and detailed metrics that can be used to monitor, optimize, and improve website performance. Built for developers, Harbor is easy to deploy, extensible, and can be integrated into CI/CD pipelines, automated workflows, or reporting systems.
 
 ## Features
 
@@ -49,8 +49,11 @@ This worker can be deployed to your Cloudflare environment by running `npm run d
 
 ### Query Parameters
 
-The worker accepts the following query parameters:
-	•	`url`: The URL to analyze (required).
+| Parameter   | Required | Description                              |
+|-------------|----------|------------------------------------------|
+| `url`       | Yes      | The full URL to analyze.                |
+| `strategy`  | No       | `mobile` or `desktop` (default: both).|
+| `category`  | No       | `performance`, `accessibility`, `best-practices`, or `seo` (default: all).|
 
 ### Example Request
 

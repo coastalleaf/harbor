@@ -1,16 +1,3 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Bind resources to your worker in `wrangler.toml`. After adding bindings, a type definition for the
- * `Env` object can be regenerated with `npm run cf-typegen`.
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
-
 export interface Env {
 	API_KEY: string;
 }
@@ -19,6 +6,8 @@ export default {
 	async fetch(request, env, ctx): Promise<Response> {
 		const url = new URL(request.url);
 		const queryUrl = url.searchParams.get('url');
+		const queryStrategy = url.searchParams.get('strategy'); // Optional strategy: mobile or desktop
+		const queryCategory = url.searchParams.get('category'); // Optional category: performance, seo, etc.
 
 		if (!queryUrl) {
 			return new Response(
@@ -29,12 +18,40 @@ export default {
 			);
 		}
 
-		const categories = ['performance', 'accessibility', 'best-practices', 'seo'];
-		const strategies = ['mobile', 'desktop']; // Analyze both mobile and desktop
+		// Default to all categories and both strategies
+		const allCategories = ['performance', 'accessibility', 'best-practices', 'seo'];
+		const allStrategies = ['mobile', 'desktop'];
+
+		// Allow filtering by specific query parameters
+		const categories = queryCategory ? [queryCategory] : allCategories;
+		const strategies = queryStrategy ? [queryStrategy] : allStrategies;
 
 		const results: any = {};
 
+		// Validate user-provided categories and strategies
+		const validCategories = allCategories;
+		const validStrategies = allStrategies;
+
+		if (queryCategory && !validCategories.includes(queryCategory)) {
+			return new Response(
+				JSON.stringify({
+					error: `Invalid category '${queryCategory}'. Valid options: ${validCategories.join(', ')}`,
+				}),
+				{ status: 400, headers: { 'Content-Type': 'application/json' } },
+			);
+		}
+
+		if (queryStrategy && !validStrategies.includes(queryStrategy)) {
+			return new Response(
+				JSON.stringify({
+					error: `Invalid strategy '${queryStrategy}'. Valid options: ${validStrategies.join(', ')}`,
+				}),
+				{ status: 400, headers: { 'Content-Type': 'application/json' } },
+			);
+		}
+
 		try {
+			// Iterate through strategies and categories
 			for (const strategy of strategies) {
 				results[strategy] = {};
 
@@ -82,7 +99,9 @@ export default {
 					results[strategy][category] = {
 						requestedUrl: data.lighthouseResult.requestedUrl,
 						finalUrl: data.lighthouseResult.finalUrl,
-						overallScore: data.lighthouseResult.categories[category]?.score * 100, // Convert score to percentage
+						overallScore: data.lighthouseResult.categories[category]?.score
+							? data.lighthouseResult.categories[category]?.score * 100
+							: null, // Convert score to percentage
 						metrics: metrics,
 						recommendations: recommendations,
 					};
